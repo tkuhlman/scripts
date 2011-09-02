@@ -1,0 +1,37 @@
+#!/bin/bash
+#
+# A simple script that wraps another and then uses send_nsca to report success or failure.
+# Works only with nagios services not hosts
+
+nsca_host=''
+host_name=''
+service_name=''
+cmd=''
+
+#Parse the arguments
+while getopts "H:h:s:" opt; do
+    case $opt in
+        H) nsca_host=$OPTARG;;
+        h) host_name=$OPTARG;;
+        s) service_name=$OPTARG;;
+    esac
+done
+cmd=${@:$OPTIND}
+
+#Verify I have all the args I need
+if [ -z $nsca_host ] || [ -z $host_name ] || [ -z $service_name ] || [ -z "$cmd" ]; then
+    echo "Usage: $0 -H <nsca_host> -h <service host> -s <service name> <command to run and args>"
+    exit 1
+fi
+
+#run the command and get the return code and first line of output
+out=$($cmd 2>&1|head -1)
+if [ $? -ne 0 ]; then
+    return_code=1
+else
+    return_code=0
+fi
+
+#Send the notification with send_nsca
+msg="$host_name\t$service_name\t$return_code\t$out\n"
+echo -en $msg | /usr/sbin/send_nsca -H $nsca_host
