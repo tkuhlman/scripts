@@ -25,11 +25,15 @@ if [ -z $nsca_host ] || [ -z $host_name ] || [ -z $service_name ] || [ -z "$cmd"
 fi
 
 #run the command and get the return code and first line of output
-out=$($cmd 2>&1|head -1)
+fullout=$($cmd 2>&1)
 if [ $? -ne 0 ]; then
     return_code=1
 else
     return_code=0
+fi
+out=$(echo -n $fullout|head -1)
+if [ -z "$out" ]; then
+    out="no output"
 fi
 
 #Send the notification with send_nsca
