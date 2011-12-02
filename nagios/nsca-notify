@@ -22,7 +22,7 @@ def main(argv=None):
     shell_cmd = argv[4:]
 
     #Run the shell command checking output and only sending the first line of ouput to nsca
-    cmd = subprocess.Popen(shell_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+    cmd = subprocess.Popen(' '.join(shell_cmd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
     cmd.wait()
     out = cmd.stdout.readline()
 
