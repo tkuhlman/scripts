@@ -23,8 +23,7 @@ def main(argv=None):
 
     #Run the shell command checking output and only sending the first line of ouput to nsca
     cmd = subprocess.Popen(' '.join(shell_cmd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-    cmd.wait()
-    out = cmd.stdout.readline()
+    (out, err) = cmd.communicate()
 
     #run send_nsca
     msg = "%s\t%s\t%d\t%s\n" % (service_host, service_name, cmd.returncode, out)
