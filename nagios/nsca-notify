@@ -24,13 +24,11 @@ def main(argv=None):
     #Run the shell command checking output and only sending the first line of ouput to nsca
     cmd = subprocess.Popen(' '.join(shell_cmd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
     (out, err) = cmd.communicate()
-    if len(out) == 0:
-        out = 'No Output'
     if cmd.returncode != 0:
         print 'ERROR: %s failed with returncode %d and ouput:\n%s' % (' '.join(shell_cmd), cmd.returncode, out)
 
     #run send_nsca
-    msg = "%s\t%s\t%d\t%s\n" % (service_host, service_name, cmd.returncode, out)
+    msg = "%s\t%s\t%d\t%s\n" % (service_host, service_name, cmd.returncode, 'Output: ' + str(out))
     nsca = subprocess.Popen([SEND_NSCA, '-H', nsca_server], stdin=subprocess.PIPE, stdout=subprocess.PIPE, \
         stderr=subprocess.STDOUT)
     (nsca_out, nsca_err) = nsca.communicate(msg)
