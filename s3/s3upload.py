@@ -3,13 +3,14 @@
 """ S3 upload
     A simple script that will upload all files in a directory to an s3 bucket. It does not act recursively.
     Why implement yet another s3 tool? As of this writing no tools (only libraries) support multipart upload
-    which is required fro files larger than 5GB.
-    This require filechunkio from https://bitbucket.org/fabian/filechunkio/, I have made a deb
+    which is required for files larger than 5GB.
+    This requires filechunkio from https://bitbucket.org/fabian/filechunkio/
 """
 
 import logging
 import os
 import sys
+import threading
 
 import boto
 from filechunkio import FileChunkIO
@@ -23,9 +24,10 @@ log.setLevel(logging.INFO)
 
 def mpupload(bucket, keyname, path, file_size):
     """ Upload to s3 using multipart upload.
+        One thread for each part, which means this can be a bandwidth hog for large files.
     """
-    #split into gigabyte file chunks
-    chunk_size = 1073741824
+    #split into 4 gigabyte file chunks
+    chunk_size = 4294967296
     if file_size % chunk_size > 0:
         num_chunks = (file_size/chunk_size) + 1
     else:
@@ -33,6 +35,7 @@ def mpupload(bucket, keyname, path, file_size):
 
     mp = bucket.initiate_multipart_upload(keyname)
     offset = 0
+    threads = []
     for chunk in range(1, num_chunks + 1):
         if chunk == num_chunks: #If this is the last go to the end of the file
             file_chunk = FileChunkIO(path, offset=offset)
@@ -44,7 +47,13 @@ def mpupload(bucket, keyname, path, file_size):
             file_chunk = FileChunkIO(path, offset=offset, bytes=chunk_size)
             offset = offset + chunk_size
         log.debug('Uploading chunk %i of %i' % (chunk, num_chunks))
-        mp.upload_part_from_file(file_chunk, chunk)
+        mp_thread = threading.Thread(target=mp.upload_part_from_file, args=(file_chunk, chunk))
+        mp_thread.start()
+        threads.append(mp_thread)
+
+    for mp_thread in threads: #Wait for all threads to finish
+        if mp_thread.is_alive():
+            mp_thread.join()
 
     mp.complete_upload()
 
