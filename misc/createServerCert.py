@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-#
-# $Id: createServerCert.py 69162 2010-07-02 17:06:22Z tim $
 """ Create TLS Server Certifciate
     This script creates server certicates using the fully qualified domain names given as arguments.
-    It assumes the base directory is the CA dir and everything is in the path
+    It assumes the base directory is the CA dir and openssl is in the path
+
+    To create your own CA the /usr/lib/ssl/misc/CA.pl script that ships with linux versions of OpenSSL can be used.
 """
 
 import os, sys
