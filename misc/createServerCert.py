@@ -3,6 +3,7 @@
     This script creates server certicates using the fully qualified domain names given as arguments.
     It assumes the base directory is the CA dir and openssl is in the path
 
+    A sample openssl.cnf ships with openssl.
     To create your own CA the /usr/lib/ssl/misc/CA.pl script that ships with linux versions of OpenSSL can be used.
 """
 
