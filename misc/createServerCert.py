@@ -5,6 +5,8 @@
 
     A sample openssl.cnf ships with openssl.
     To create your own CA the /usr/lib/ssl/misc/CA.pl script that ships with linux versions of OpenSSL can be used.
+
+    To show info about a cert `openssl x509 -noout -text -in file.pem`
 """
 
 import os, sys
