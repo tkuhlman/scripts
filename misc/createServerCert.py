@@ -3,7 +3,7 @@
     This script creates server certicates using the fully qualified domain names given as arguments.
     It assumes the base directory is the CA dir and openssl is in the path
 
-    A sample openssl.cnf ships with openssl.
+    A sample openssl.cnf ships with openssl, it assumed that reasonable defaults are set for country/state etc.
     To create your own CA the /usr/lib/ssl/misc/CA.pl script that ships with linux versions of OpenSSL can be used.
 
     To show info about a cert `openssl x509 -noout -text -in file.pem`
@@ -28,7 +28,8 @@ def main(argv=None):
         #Create the request
         req = Popen('openssl req -config ./openssl.cnf -newkey rsa:2048 -nodes -keyout ' + host + \
             '_private.pem -out ' + host + '_req.txt', stdin=PIPE, stdout=PIPE, stderr=STDOUT, shell=True)
-        req.stdin.write("\n\n\n\n" + fqdn + "\nDNS:" + host + "\n\n\n\n")        
+        # Todo this is really fragile and is specific to the openssl.cnf defaults.
+        req.stdin.write("\n\n\n\n\n" + fqdn + "\nDNS:" + host + "\n\n\n\n")        
         if req.wait() != 0:
             print 'Error in creating the certificate request for ' + fqdn
             continue
