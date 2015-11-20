@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+#
+# Aid in sending an EOD message. Pretty specific to my setup.
+# This will take my markdown notes convert to html, open an email with the contents and archive the notes
+# replacing them with the empty template. I then just review the email and hit send.
+#
+# I am using blackfriday-tool for md processing but that could be easily replaced, specifically I
+# could consider the python-markdown package to avoid a temp dir
+#
+# TODO - Figure out how to include the summary url info into the email also.
+
+from datetime import datetime
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+
+EMAIL = "IS - Foxtrot Squad <foxtrot-reports@greenteam.canonical.com>"
+ARCHIVE_DIR = "/home/tim/data/EOD-reports"
+TEMPLATE = "/home/tim/data/EOD-reports/daily.md.template"
+NOTES_FILE = "/home/tim/daily.md"
+SUBJECT_TEMPLATE = "%Y-%m-%d (%a) EOD Report for Tim Kuhlman"
+SUMMARY_URL = "https://portal.admin.canonical.com/myday"
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv
+
+    # Archive the current daily report
+    now = datetime.now()
+    adir = os.path.join(ARCHIVE_DIR, now.strftime("%Y"))
+    if not os.path.exists(adir):
+      os.mkdir(adir)
+    shutil.copyfile(NOTES_FILE, os.path.join(adir, now.strftime("%Y-%m-%d") + '.md'))
+
+    # Create html from the daily report
+    tdir = tempfile.mkdtemp()
+    tpath = os.path.join(tdir, 'daily.html')
+    subprocess.check_call(['blackfriday-tool', NOTES_FILE, tpath])
+    with open(tpath, 'r') as tfile:
+        email_body = tfile.read()
+    os.remove(tpath)
+    os.rmdir(tdir)
+
+    # Copy the template over the daily.md
+    shutil.copyfile(TEMPLATE, NOTES_FILE)
+
+    # Open up the summary url
+    subprocess.check_call(['xdg-open', SUMMARY_URL])
+
+    # Start up an email in thunderbird - http://kb.mozillazine.org/Command_line_arguments_(Thunderbird)
+    contents = "to='{}',subject='{}',format=1,body='{}'".format(EMAIL,
+                                                                now.strftime(SUBJECT_TEMPLATE),
+                                                                email_body)
+    subprocess.check_call(['thunderbird', '-compose', contents])
+
+
+if __name__ == "__main__":
+    sys.exit(main())
