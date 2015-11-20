@@ -5,7 +5,8 @@
 # replacing them with the empty template. I then just review the email and hit send.
 #
 # I am using blackfriday-tool for md processing but that could be easily replaced, specifically I
-# could consider the python-markdown package to avoid a temp dir
+# could consider the python-markdown package but after trying that it doesn't handle my common nested
+# lists as well.
 #
 # TODO - Figure out how to include the summary url info into the email also.
 
