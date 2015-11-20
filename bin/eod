@@ -6,7 +6,8 @@
 #
 # I am using blackfriday-tool for md processing but that could be easily replaced, specifically I
 # could consider the python-markdown package but after trying that it doesn't handle my common nested
-# lists as well.
+# lists as well. Even with blackfriday I want some simple css like
+# "br {display: none;}\np{ margin-top:0; margin-bottom:0 }" but I can't seem to get that inline.
 #
 # TODO - Figure out how to include the summary url info into the email also.
 
