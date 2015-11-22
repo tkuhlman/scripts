@@ -6,10 +6,15 @@
 #
 # I am using blackfriday-tool for md processing but that could be easily replaced, specifically I
 # could consider the python-markdown package but after trying that it doesn't handle my common nested
-# lists as well. Even with blackfriday I want some simple css like
-# "br {display: none;}\np{ margin-top:0; margin-bottom:0 }" but I can't seem to get that inline.
+# lists as well.
 #
-# TODO - Figure out how to include the summary url info into the email also.
+# TODO
+#  - The rendering includes bunches of extra blank lines when looking in Thunderbird. This is only a thunderbird problem
+#    with or without css both firefox and chrome render it fine.
+#    - I could just send the email directly with smtp, but there are a number of things I don't like about that, no preview, another app with credentials,
+#      and I would have to connect to imap also to save in a sent folder.
+#    - A possibly related bug https://bugs.launchpad.net/ubuntu/+source/thunderbird/+bug/1021813
+#  - Figure out how to include the summary url info into the email also.
 
 from datetime import datetime
 import os
@@ -37,13 +42,16 @@ def main(argv=None):
     shutil.copyfile(NOTES_FILE, os.path.join(adir, now.strftime("%Y-%m-%d") + '.md'))
 
     # Create html from the daily report
+    html_header = "<html>\n<head>\n<style>\nbr{display: none}\np{margin:0}\nli{margin:0; padding:0}\nh3{margin:0; padding:0}\nh4{margin:0; padding:0}\n</style>\n</head><body>\n"
+    html_footer = "</body></html>"
     tdir = tempfile.mkdtemp()
     tpath = os.path.join(tdir, 'daily.html')
     subprocess.check_call(['blackfriday-tool', NOTES_FILE, tpath])
     with open(tpath, 'r') as tfile:
-        email_body = tfile.read()
+        html_body = tfile.read()
     os.remove(tpath)
     os.rmdir(tdir)
+    email_body = html_header + html_body + html_footer
 
     # Copy the template over the daily.md
     shutil.copyfile(TEMPLATE, NOTES_FILE)
