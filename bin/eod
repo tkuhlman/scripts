@@ -1,19 +1,12 @@
 #!/usr/bin/env python
 #
 # Aid in sending an EOD message. Pretty specific to my setup.
-# This will take my markdown notes convert to html, open an email with the contents and archive the notes
+# This will take my markdown notes, open an email with the contents and archive the notes
 # replacing them with the empty template. I then just review the email and hit send.
-#
-# I am using blackfriday-tool for md processing but that could be easily replaced, specifically I
-# could consider the python-markdown package but after trying that it doesn't handle my common nested
-# lists as well.
+# I originally was rendering my markdown to html but Thunderbirds html rendering sucks so I am
+# just sending the raw markdown instead.
 #
 # TODO
-#  - The rendering includes bunches of extra blank lines when looking in Thunderbird. This is only a thunderbird problem
-#    with or without css both firefox and chrome render it fine.
-#    - I could just send the email directly with smtp, but there are a number of things I don't like about that, no preview, another app with credentials,
-#      and I would have to connect to imap also to save in a sent folder.
-#    - A possibly related bug https://bugs.launchpad.net/ubuntu/+source/thunderbird/+bug/1021813
 #  - Figure out how to include the summary url info into the email also.
 
 from datetime import datetime
@@ -41,26 +34,16 @@ def main(argv=None):
       os.mkdir(adir)
     shutil.copyfile(NOTES_FILE, os.path.join(adir, now.strftime("%Y-%m-%d") + '.md'))
 
-    # Create html from the daily report
-    html_header = "<html>\n<head>\n<style>\nbr{display: none}\np{margin:0}\nli{margin:0; padding:0}\nh3{margin:0; padding:0}\nh4{margin:0; padding:0}\n</style>\n</head><body>\n"
-    html_footer = "</body></html>"
-    tdir = tempfile.mkdtemp()
-    tpath = os.path.join(tdir, 'daily.html')
-    subprocess.check_call(['blackfriday-tool', NOTES_FILE, tpath])
-    with open(tpath, 'r') as tfile:
-        html_body = tfile.read()
-    os.remove(tpath)
-    os.rmdir(tdir)
-    email_body = html_header + html_body + html_footer
-
-    # Copy the template over the daily.md
+    # Read the dail report contents then copy the template over the daily.md
+    with open(NOTES_FILE, 'r') as daily:
+        email_body = daily.read()
     shutil.copyfile(TEMPLATE, NOTES_FILE)
 
     # Open up the summary url
     subprocess.check_call(['xdg-open', SUMMARY_URL])
 
     # Start up an email in thunderbird - http://kb.mozillazine.org/Command_line_arguments_(Thunderbird)
-    contents = "to='{}',subject='{}',format=1,body='{}'".format(EMAIL,
+    contents = "to='{}',subject='{}',format=2,body='{}'".format(EMAIL,
                                                                 now.strftime(SUBJECT_TEMPLATE),
                                                                 email_body)
     subprocess.check_call(['thunderbird', '-compose', contents])
