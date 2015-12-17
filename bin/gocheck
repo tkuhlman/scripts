@@ -10,6 +10,4 @@ golint $@
 echo "\ngo vet\n"
 go vet -x $@
 echo "\ngo test -cover -race \n"
-echo "Race detection is having issues on my new install, skipping" # Added 9/7/2015 running go1.5 using future packages
-#go test -cover -race $@
-go test -cover $@
+go test -cover -race $@
