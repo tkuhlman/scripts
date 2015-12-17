@@ -11,3 +11,5 @@ echo "\ngo vet\n"
 go vet -x $@
 echo "\ngo test -cover -race \n"
 go test -cover -race $@
+
+echo "Tip - To view coverage details run 'go test -coverprofile=cover.out $@' followed by 'go tool cover -html=cover.out'"
