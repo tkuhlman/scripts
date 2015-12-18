@@ -1,0 +1,116 @@
+#!/usr/bin/env python
+""" Launchpad Merge Proposal helper
+
+    Run with Launchpad.net MP url and this will spawn a shell with the working directory
+    being the checked out code with the uncommitted merged code. Then run 'bzr di' or tests as needed.
+    When you exit the shell you will be prompted to merge and for commit message as needed.
+
+    Assumptions:
+    - You have bzr installed and your user is setup with launchpad credentials.
+"""
+from contextlib import contextmanager
+import os
+import requests
+import shutil
+import sys
+import subprocess
+import tempfile
+import urlparse
+
+
+SHELL='/bin/bash'
+
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv
+    if len(argv) != 2:
+        print('Usage: {} <Merge Proposal url>'.format(argv[0]))
+        return 1
+
+    # Pull the branch details from the api
+    api_url = parse_mp_url(argv[1])
+    mp_json = api_json(api_url)
+    target_branch = api_json(mp_json['target_branch_link'])['bzr_identity']
+    source_branch = api_json(mp_json['source_branch_link'])['bzr_identity']
+
+    # Branch/merge to a tempdir
+    with tempdir() as base_dir:
+        subprocess.check_call(['bzr', 'branch', target_branch, base_dir])
+        # bzr merge will fail with conflicts, but I don't want to bail so use call not check_call
+        subprocess.call(['bzr', 'merge', source_branch], cwd=base_dir)
+
+        # Drop to a shell
+        print('The uncommitted merged code is available here, run tests, bzr di, etc as needed.')
+        print('When the shell is exited you will be prompted regarding merging')
+        subprocess.call([SHELL], cwd=base_dir)
+
+        # Merge or not
+        if raw_input('Would you like to merge? [y/n] ') == 'y':
+            # Have the user write the merge comment
+            lp_login = subprocess.check_output(['bzr', 'launchpad-login']).strip()
+            comment_str = '[{}, r={}] {}'.format(mp_json['registrant_link'].split('~')[-1],
+                                                 lp_login, mp_json['description'])
+            comment_path = comment_file(base_dir, comment_str)
+
+            # Merge and push
+            subprocess.check_call(['bzr', 'ci', '-F', comment_path], cwd=base_dir)
+            subprocess.check_call(['bzr', 'push', ':parent'], cwd=base_dir)
+        else:
+            print('At this point you must make any comments on the webui')
+            # It would be nice to allow comments but requires auth, auth probably isn't too hard if I
+            # use launchpadlib but that is for another time, https://help.launchpad.net/API/launchpadlib
+            #if raw_input('Would you like to comment on the MP? [y/n] ') == 'y':
+            #    comment_path = comment_file (base_dir, '# Write your comment here (remove this line)')
+            #    with open(comment_path, 'r') as comment:
+            #        comment = comment.read()
+
+
+def api_json(api_url):
+    """ Hit an api url and return the parsed body json """
+    api_req = requests.get(api_url)
+    if api_req.status_code != requests.codes.ok:
+        print('Lauchpad API error for url {}'.format(api_url))
+        sys.exit(3)
+    return api_req.json()
+
+
+def comment_file(dir, contents):
+    """ Create a temporary comment file in dir with prepopulate contents, then allow the user
+        to edit it.
+        Return the path the final file
+    """
+    comment_file, comment_path = tempfile.mkstemp(dir=dir)
+    os.write(comment_file, contents)
+    editor = os.environ.get('EDITOR', 'vi')
+    # check_call because if the user aborts here, it should stop the merge/push/comment
+    subprocess.check_call([editor, comment_path])
+    return comment_path
+
+
+def parse_mp_url(mp_url):
+    """ Parse a merge proposal url and return a corresponding api url """
+    parts = urlparse.urlsplit(mp_url)
+    if not parts.netloc.startswith('code.launchpad.net'):
+        print('Error parsing url, should be of the form'
+              'https://code.launchpad.net/~<author.name>/<project.name>/<branch.name>/+merge/<id>')
+        sys.exit(2)
+
+    new_parts = urlparse.SplitResult(parts.scheme, 'api.launchpad.net', '1.0' + parts.path,
+                                     parts.query, parts.fragment)
+
+    return new_parts.geturl()
+
+@contextmanager
+def tempdir():
+    """ A simple temp directory context manager. """
+    tdir = tempfile.mkdtemp()
+    base_dir = os.path.join(tdir, 'mp')
+    try:
+        yield base_dir
+    finally:
+        shutil.rmtree(tdir)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
