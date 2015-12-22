@@ -60,7 +60,7 @@ def main(argv=None):
 
             # Merge and push
             subprocess.check_call(['bzr', 'ci', '-F', comment_path], cwd=base_dir)
-            subprocess.check_call(['bzr', 'push', ':parent'], cwd=base_dir)
+            subprocess.check_call(['bzr', 'push', target_branch], cwd=base_dir)
         else:
             print('At this point you must make any comments on the webui')
             # It would be nice to allow comments but requires auth, auth probably isn't too hard if I
