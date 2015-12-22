@@ -7,6 +7,10 @@
 
     Assumptions:
     - You have bzr installed and your user is setup with launchpad credentials.
+
+    Resources:
+    - https://help.launchpad.net/API/launchpadlib
+    - https://launchpad.net/+apidoc/1.0.html
 """
 from contextlib import contextmanager
 import os
@@ -17,8 +21,8 @@ import subprocess
 import tempfile
 import urlparse
 
-
-SHELL='/bin/bash'
+BRANCH_CACHE = os.path.expanduser('~/.launchpad_cache')
+SHELL = '/bin/bash'
 
 
 def main(argv=None):
@@ -34,9 +38,10 @@ def main(argv=None):
     target_branch = api_json(mp_json['target_branch_link'])['bzr_identity']
     source_branch = api_json(mp_json['source_branch_link'])['bzr_identity']
 
+    cached_branch = cache_branch(target_branch)
     # Branch/merge to a tempdir
     with tempdir() as base_dir:
-        subprocess.check_call(['bzr', 'branch', target_branch, base_dir])
+        subprocess.check_call(['bzr', 'branch', cached_branch, base_dir])
         # bzr merge will fail with conflicts, but I don't want to bail so use call not check_call
         subprocess.call(['bzr', 'merge', source_branch], cwd=base_dir)
 
@@ -73,6 +78,23 @@ def api_json(api_url):
         print('Lauchpad API error for url {}'.format(api_url))
         sys.exit(3)
     return api_req.json()
+
+
+def cache_branch(target_branch):
+    """ Cache branches locally to avoid so much download.
+        The first download will be the full thing, subsequent downloads will just be a bzr pull
+        Thanks Paul Gear for this idea.
+    """
+    if not os.path.exists(BRANCH_CACHE):
+        os.mkdir(BRANCH_CACHE)
+
+    target_dir = os.path.join(BRANCH_CACHE, target_branch)
+    if os.path.exists(target_dir):
+        subprocess.call(['bzr', 'pull'], cwd=target_dir)
+    else:
+        subprocess.check_call(['bzr', 'branch', target_branch, target_dir])
+
+    return target_dir
 
 
 def comment_file(dir, contents):
