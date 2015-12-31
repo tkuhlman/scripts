@@ -21,6 +21,8 @@ import subprocess
 import tempfile
 import urlparse
 
+from launchpadlib.launchpad import Launchpad
+
 BRANCH_CACHE = os.path.expanduser('~/.launchpad_cache')
 SHELL = '/bin/bash'
 
@@ -32,11 +34,25 @@ def main(argv=None):
         print('Usage: {} <Merge Proposal url>'.format(argv[0]))
         return 1
 
+    # Auth launchpad
+    launchpad = Launchpad.login_with('mp', 'production')
+
     # Pull the branch details from the api
-    api_url = parse_mp_url(argv[1])
-    mp_json = api_json(api_url)
-    target_branch = api_json(mp_json['target_branch_link'])['bzr_identity']
-    source_branch = api_json(mp_json['source_branch_link'])['bzr_identity']
+    branch_name, merge_id = parse_mp_url(argv[1])
+    branch = launchpad.branches.getByUniqueName(unique_name=branch_name)
+    mps = branch.landing_targets
+    mp = None
+    for tmp_mp in mps:
+        if tmp_mp.web_link == argv[1]:
+            mp = tmp_mp
+            break
+
+    if mp is None:
+        print('Error finding the merge proposal via the API')
+        sys.exit(3)
+
+    target_branch = mp.target_branch.bzr_identity
+    source_branch = mp.source_branch.bzr_identity
 
     cached_branch = cache_branch(target_branch)
     # Branch/merge to a tempdir
@@ -54,8 +70,8 @@ def main(argv=None):
         if raw_input('Would you like to merge? [y/n] ') == 'y':
             # Have the user write the merge comment
             lp_login = subprocess.check_output(['bzr', 'launchpad-login']).strip()
-            comment_str = '[{}, r={}] {}'.format(mp_json['registrant_link'].split('~')[-1],
-                                                 lp_login, mp_json['description'])
+            comment_str = '[{}, r={}] {}'.format(mp.registrant_link.split('~')[-1],
+                                                 lp_login, mp.description)
             comment_path = comment_file(base_dir, comment_str)
 
             # Merge and push
@@ -69,15 +85,6 @@ def main(argv=None):
             #    comment_path = comment_file (base_dir, '# Write your comment here (remove this line)')
             #    with open(comment_path, 'r') as comment:
             #        comment = comment.read()
-
-
-def api_json(api_url):
-    """ Hit an api url and return the parsed body json """
-    api_req = requests.get(api_url)
-    if api_req.status_code != requests.codes.ok:
-        print('Lauchpad API error for url {}'.format(api_url))
-        sys.exit(3)
-    return api_req.json()
 
 
 def cache_branch(target_branch):
@@ -111,17 +118,17 @@ def comment_file(dir, contents):
 
 
 def parse_mp_url(mp_url):
-    """ Parse a merge proposal url and return a corresponding api url """
+    """ Parse a merge proposal url and return the branch name and merge id """
     parts = urlparse.urlsplit(mp_url)
     if not parts.netloc.startswith('code.launchpad.net'):
         print('Error parsing url, should be of the form'
               'https://code.launchpad.net/~<author.name>/<project.name>/<branch.name>/+merge/<id>')
         sys.exit(2)
 
-    new_parts = urlparse.SplitResult(parts.scheme, 'api.launchpad.net', '1.0' + parts.path,
-                                     parts.query, parts.fragment)
+    branch_name, merge_id = parts.path.split('+merge', 1)
 
-    return new_parts.geturl()
+    return branch_name.rstrip('/').lstrip('/'), merge_id.strip('/')
+
 
 @contextmanager
 def tempdir():
