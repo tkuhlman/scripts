@@ -99,6 +99,9 @@ def cache_branch(target_branch):
     if os.path.exists(target_dir):
         subprocess.call(['bzr', 'pull'], cwd=target_dir)
     else:
+        pdir = os.path.dirname(target_branch)
+        if not os.path.exists(pdir):
+            os.makedirs(pdir)
         subprocess.check_call(['bzr', 'branch', target_branch, target_dir])
 
     return target_dir
