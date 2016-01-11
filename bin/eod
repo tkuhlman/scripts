@@ -17,7 +17,7 @@ import subprocess
 import sys
 import tempfile
 
-EMAIL = "IS - Whiskey Squad <whiskey-reports@greenteam.canonical.com>"
+EMAIL = "IS - Foxtrot Squad <foxtrot-reports@greenteam.canonical.com>"
 ARCHIVE_DIR = "/home/tim/data/EOD-reports"
 TEMPLATE = "/home/tim/data/EOD-reports/daily.md.template"
 NOTES_FILE = "/home/tim/daily.md"
