@@ -244,7 +244,7 @@ def main(argv=None):
             comment_path = comment_file(base_dir, comment_str)
 
             # Approve in the MP
-            mp.createComment(subject='Re: [Merge] {} into {}'.format(source_branch, target_branch),
+            mp.createComment(subject='Re: [Merge] {} into {}'.format(source_branch.url, target_branch.url),
                              vote='Approve')
 
             # Merge and push
@@ -255,7 +255,7 @@ def main(argv=None):
                 with open(comment_path, 'r') as comment:
                     comment = comment.read()
 
-                mp.createComment(subject='Re: [Merge] {} into {}'.format(source_branch, target_branch),
+                mp.createComment(subject='Re: [Merge] {} into {}'.format(source_branch.url, target_branch.url),
                                  content=comment, vote='Needs Fixing')
 
 
