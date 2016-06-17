@@ -6,6 +6,7 @@ if [ $# -lt 1 ]; then
 fi
 
 echo "golint\n"
+# From https://github.com/golang/lint
 golint $@
 echo "\ngo vet\n"
 go vet -x $@
