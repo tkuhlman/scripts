@@ -1,16 +1,21 @@
 #!/bin/sh
+#
+# Run a variety of go checks, specifically lint, vet and tests
+# If any arguments are given they are treated as the import path if none it is run across
+# a wildcard path skipping the vendor directory
 
-if [ $# -lt 1 ]; then
-  echo "specify an import path, ie 'gocheck ./...'"
-  exit 1
+import=$@
+
+if [ $# -eq 0 ]; then
+  import=$(go list ./... | grep -v /vendor/)
 fi
 
 echo "golint\n"
 # From https://github.com/golang/lint
-golint $@
+golint $import
 echo "\ngo vet\n"
-go vet -x $@
+go vet -x $import
 echo "\ngo test -cover -race \n"
-go test -cover -race $@
+go test -cover -race $import
 
-echo "Tip - To view coverage details run 'go test -coverprofile=cover.out $@' followed by 'go tool cover -html=cover.out'"
+echo "Tip - To view coverage details run 'go test -coverprofile=cover.out $import' followed by 'go tool cover -html=cover.out'"
