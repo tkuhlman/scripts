@@ -183,11 +183,11 @@ class GitBranch(Branch):
             return None
 
         if os.path.exists(self.local_dir):
-            subprocess.call(['git', 'fetch'], cwd=self.local_dir)
+            subprocess.call(['git', 'checkout', self.branch], cwd=self.local_dir)
+            subprocess.call(['git', 'pull'], cwd=self.local_dir)
         else:
             subprocess.check_call(['git', 'clone', self.url, self.local_dir])
-
-        subprocess.call(['git', 'checkout', self.branch], cwd=self.local_dir)
+            subprocess.call(['git', 'checkout', self.branch], cwd=self.local_dir)
 
         return True
 
