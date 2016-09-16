@@ -12,7 +12,9 @@ fi
 
 echo "golint\n"
 # From https://github.com/golang/lint
-golint $import
+for i in $import; do
+  golint $i
+done
 echo "\ngo vet\n"
 go vet -x $import
 echo "\ngo test -cover -race \n"
