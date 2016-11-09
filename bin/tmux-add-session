@@ -1,0 +1,11 @@
+#!/bin/sh
+# Starts another tmux session linking my todo and irc windows.
+
+#  https://github.com/tony/tmuxp is interesting but lacks the link-window command, if my need             #  for irc disappears I would consider that.
+
+if [ $# -ne 1 ]; then
+  echo "Usage: $0 <session name>"
+  exit 1
+fi
+
+tmux new-session -A -s $1 "tmux move-window -s 0 -t 2; tmux link-window -s default:todo -t 0; tmux link-window -s default:irc -t 1"
