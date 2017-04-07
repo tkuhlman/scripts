@@ -1,0 +1,8 @@
+#!/bin/sh
+#
+# A simple helper to run tests with coverage, display the results and cleanup the output.
+
+go test $@ -coverprofile=cover.out
+go tool cover -html=cover.out
+rm cover.out
+
