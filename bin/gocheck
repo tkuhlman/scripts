@@ -10,6 +10,13 @@ if [ $# -eq 0 ]; then
   import=$(go list ./... | grep -v /vendor/)
 fi
 
+full=0
+if [ "$1" = "-f" ]; then
+  full=1
+  shift 1
+  import=$@
+fi
+
 echo "# golint"
 # From https://github.com/golang/lint
 for i in $import; do
@@ -18,10 +25,14 @@ done
 echo "\n# go vet"
 go vet -x $import
 
-echo "\n# go test -cover -race"
-go test -cover -race $import
-
-echo "\n"
-# The complexity checker works on file path not import path, from https://github.com/fzipp/gocyclo
-echo "# For cyclomatic complexity run 'gocyclo -over 10 /path/'"
-echo "# To view coverage details run 'go test -coverprofile=cover.out $import' followed by 'go tool cover -html=cover.out'"
+if [ $full -eq 1 ]; then
+  echo "\n# go test -cover -race"
+  go test -cover -race $import
+  echo "\n"
+  # The complexity checker works on file path not import path, from https://github.com/fzipp/gocyclo
+  echo "# For cyclomatic complexity run 'gocyclo -over 10 /path/'"
+  echo "# To view coverage details run 'go test -coverprofile=cover.out $import' followed by 'go tool cover -html=cover.out'"
+else
+  echo "\n# go test"
+  go test $import
+fi
