@@ -28,10 +28,10 @@ go vet -x $import
 if [ $full -eq 1 ]; then
   echo "\n# go test -cover -race"
   go test -cover -race $import
-  echo "\n"
+  echo "\n# gocyclo -over 10"
   # The complexity checker works on file path not import path, from https://github.com/fzipp/gocyclo
-  echo "# For cyclomatic complexity run 'gocyclo -over 10 /path/'"
-  echo "# To view coverage details run 'go test -coverprofile=cover.out $import' followed by 'go tool cover -html=cover.out'"
+  gocyclo -over 10 $GOPATH/src/$import
+  echo "\n# To view coverage details run 'go test -coverprofile=cover.out $import' followed by 'go tool cover -html=cover.out'"
 else
   echo "\n# go test"
   go test $import
